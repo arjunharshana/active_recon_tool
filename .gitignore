@@ -12,3 +12,7 @@ __pycache__/
 
 #reports
 reports/
+
+#os files
+.DS_Store
+Thumbs.db
