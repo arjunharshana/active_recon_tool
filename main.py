@@ -1,6 +1,7 @@
 import sys
 import argparse
 from colorama import init, Fore
+from modules.port_scanner import scan_ports
 
 init(autoreset=True)
 
@@ -28,7 +29,12 @@ def main():
 
     # port scanning 
     print(Fore.YELLOW + "[*] Starting port scan on {}".format(args.target))
-    #TODO: call port scanning function 
+    start_port, end_port = parse_ports(args.ports)
+    open_ports = scan_ports(args.target, start_port, end_port, args.threads)
+
+    if not open_ports:
+        print(Fore.RED + "[!] No open ports found on {}".format(args.target))
+        return
 
     # banner grabbing
     print(Fore.YELLOW + "[*] Starting banner grabbing on {}".format(args.target))
@@ -39,6 +45,16 @@ def main():
         print(Fore.YELLOW + "[*] Starting directory fuzzing on {}".format(args.target))
     
     #TODO: call directory fuzzing function
+
+def parse_ports(port_range):
+    try:
+        if '-' in port_range:
+            start, end = port_range.split('-')
+            return int(start), int(end)
+        return int(port_range), int(port_range)
+    except ValueError:
+        print(Fore.RED + "[!] Invalid port range. Use format: start-end (e.g., 1-1000)")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
