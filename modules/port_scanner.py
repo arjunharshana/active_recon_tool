@@ -26,7 +26,7 @@ def scan_port(target, port):
             return True
         sock.close()
         return False
-    except Exception as e:
+    except Exception:
         return False
 
 # worker function for threads

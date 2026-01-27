@@ -2,6 +2,7 @@ import sys
 import argparse
 from colorama import init, Fore
 from modules.port_scanner import scan_ports
+from modules.service_grab import grab_service_banner
 
 init(autoreset=True)
 
@@ -38,8 +39,19 @@ def main():
 
     # banner grabbing
     print(Fore.YELLOW + "[*] Starting banner grabbing on {}".format(args.target))
-    #TODO: call banner grabbing function
+    service_datas = {}
+    if not open_ports:
+        print(Fore.RED + "[!] No open ports found on {}".format(args.target))
+    else:
+        for port in open_ports:
+            banner = grab_service_banner(args.target, port)
+            service_datas[port] = banner
+            if "Error" in banner or "Timeout" in banner:
+                print(Fore.LIGHTBLACK_EX + f"    > Port {port}: {banner}")
+            else:
+                print(Fore.GREEN + f"    > Port {port}: {banner}")
 
+    
     # directory fuzzing
     if args.fuzz:
         print(Fore.YELLOW + "[*] Starting directory fuzzing on {}".format(args.target))
