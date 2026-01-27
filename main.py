@@ -3,6 +3,7 @@ import argparse
 from colorama import init, Fore
 from modules.port_scanner import scan_ports
 from modules.service_grab import grab_service_banner
+from modules.fuzzer import fuzz_directories
 
 init(autoreset=True)
 
@@ -39,13 +40,13 @@ def main():
 
     # banner grabbing
     print(Fore.YELLOW + "[*] Starting banner grabbing on {}".format(args.target))
-    service_datas = {}
+    service_data = {}
     if not open_ports:
         print(Fore.RED + "[!] No open ports found on {}".format(args.target))
     else:
         for port in open_ports:
             banner = grab_service_banner(args.target, port)
-            service_datas[port] = banner
+            service_data[port] = banner
             if "Error" in banner or "Timeout" in banner:
                 print(Fore.LIGHTBLACK_EX + f"    > Port {port}: {banner}")
             else:
@@ -55,8 +56,17 @@ def main():
     # directory fuzzing
     if args.fuzz:
         print(Fore.YELLOW + "[*] Starting directory fuzzing on {}".format(args.target))
+        if 80 in open_ports or 443 in open_ports:
+            found_paths = fuzz_directories(args.target, args.wordlist)
+        else:
+            print(Fore.RED + "[!] No open ports for directory fuzzing.")
+
+        if found_paths:
+            print(Fore.YELLOW + "[*] Fuzzing completed. Found paths:")
+            for path, status in found_paths:
+                print(Fore.GREEN + f"    > {path} (Status: {status})")
     
-    #TODO: call directory fuzzing function
+
 
 def parse_ports(port_range):
     try:
