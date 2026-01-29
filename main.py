@@ -4,6 +4,7 @@ from colorama import init, Fore
 from modules.port_scanner import scan_ports
 from modules.service_grab import grab_service_banner
 from modules.fuzzer import fuzz_directories
+from modules.dns_enum import enumerate_dns
 
 init(autoreset=True)
 
@@ -16,8 +17,10 @@ def main():
     # other flags 
     parser.add_argument("-p", "--ports", default="1-1000", help="Port range to scan (default: 1-1000)")
     parser.add_argument("-t", "--threads", type=int, default=10, help="Number of threads to use (default: 10)")
-    parser.add_argument("-w", "--wordlist", default="wordlists/common.txt", help="Path to custom wordlist for fuzzing")
+    parser.add_argument("-wf", "--wordlist-fuzz", default="wordlists/common.txt", help="Path to custom wordlist for fuzzing")
+    parser.add_argument("-wd", "--wordlist-dns", default="wordlists/subdomains.txt", help="Path to custom wordlist for DNS enumeration")
     parser.add_argument("--fuzz", action="store_true", help="Enable directory fuzzing")
+    parser.add_argument("--dns", action="store_true", help="Enable DNS enumeration")
 
     args = parser.parse_args()
 
@@ -29,6 +32,18 @@ def main():
     =======================================================
     """.format(args.target, args.ports, args.threads))
 
+    # DNS enumeration
+    dns_results = {}
+    if args.dns:
+        if any(c.isalpha() for c in args.target):
+            dns_results = enumerate_dns(args.target, args.wordlist_dns)
+        else:
+            print(Fore.RED + "[!] DNS enumeration requires a domain name.")
+
+        if dns_results:
+            print(Fore.YELLOW + "[*] DNS Enumeration completed.")
+
+        
     # port scanning 
     print(Fore.YELLOW + "[*] Starting port scan on {}".format(args.target))
     start_port, end_port = parse_ports(args.ports)
@@ -57,7 +72,7 @@ def main():
     if args.fuzz:
         print(Fore.YELLOW + "[*] Starting directory fuzzing on {}".format(args.target))
         if 80 in open_ports or 443 in open_ports:
-            found_paths = fuzz_directories(args.target, args.wordlist)
+            found_paths = fuzz_directories(args.target, args.wordlist_fuzz)
         else:
             print(Fore.RED + "[!] No open ports for directory fuzzing.")
 

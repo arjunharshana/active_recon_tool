@@ -8,8 +8,8 @@ from colorama import Fore
 def enumerate_dns(domain, wordlist_path):
     results = {
         "records": {},
-        "subdomains": []
-        "zone_transfer": None
+        "subdomains": [],
+        "zone_transfer": None,
     }
 
     # checking standard DNS records
