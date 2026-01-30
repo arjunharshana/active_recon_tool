@@ -5,6 +5,7 @@ from modules.port_scanner import scan_ports
 from modules.service_grab import grab_service_banner
 from modules.fuzzer import fuzz_directories
 from modules.dns_enum import enumerate_dns
+from modules.ssl_checker import check_ssl
 
 init(autoreset=True)
 
@@ -21,6 +22,7 @@ def main():
     parser.add_argument("-wd", "--wordlist-dns", default="wordlists/subdomains.txt", help="Path to custom wordlist for DNS enumeration")
     parser.add_argument("--fuzz", action="store_true", help="Enable directory fuzzing")
     parser.add_argument("--dns", action="store_true", help="Enable DNS enumeration")
+
 
     args = parser.parse_args()
 
@@ -52,6 +54,14 @@ def main():
     if not open_ports:
         print(Fore.RED + "[!] No open ports found on {}".format(args.target))
         return
+
+    # SSL/TLS checking for HTTPS services
+    ssl_info = {}
+    if 443 in open_ports:
+        print(Fore.YELLOW + "[*] Checking SSL/TLS configuration on port 443")
+        ssl_info = check_ssl(args.target, 443)
+    else:
+        print(Fore.YELLOW + "[*] Port 443 not open; skipping SSL/TLS check.")
 
     # banner grabbing
     print(Fore.YELLOW + "[*] Starting banner grabbing on {}".format(args.target))
