@@ -6,6 +6,7 @@ from modules.service_grab import grab_service_banner
 from modules.fuzzer import fuzz_directories
 from modules.dns_enum import enumerate_dns
 from modules.ssl_checker import check_ssl
+from modules.waf_detect import detect_waf
 
 init(autoreset=True)
 
@@ -44,6 +45,21 @@ def main():
 
         if dns_results:
             print(Fore.YELLOW + "[*] DNS Enumeration completed.")
+
+    # WAF detection
+    if args.target.startswith("http://") or args.target.startswith("https://"):
+        target_url = args.target
+    else:
+        target_url = "http://" + args.target
+
+    waf_results = detect_waf(target_url)
+
+    if waf_results and not args.force:
+        print(Fore.RED + "[!] WAF detected. Proceeding may lead to IP blocks or false results.")
+        input(Fore.YELLOW + "[*] Press Enter to continue...")
+        if input().lower() != '':
+            print(Fore.RED + "[!] Exiting as per user request.")
+            sys.exit(0)
 
         
     # port scanning 
