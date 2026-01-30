@@ -7,6 +7,7 @@ from modules.fuzzer import fuzz_directories
 from modules.dns_enum import enumerate_dns
 from modules.ssl_checker import check_ssl
 from modules.waf_detect import detect_waf
+from modules.reporter import save_active_report
 
 init(autoreset=True)
 
@@ -27,6 +28,13 @@ def main():
 
     args = parser.parse_args()
 
+    dns_results = {}
+    waf_results = []
+    open_ports = []
+    service_results = {}
+    ssl_results = {}
+    fuzz_results = []
+
     # Display banner
     print(Fore.RED + r"""
     =======================================================
@@ -36,7 +44,6 @@ def main():
     """.format(args.target, args.ports, args.threads))
 
     # DNS enumeration
-    dns_results = {}
     if args.dns:
         if any(c.isalpha() for c in args.target):
             dns_results = enumerate_dns(args.target, args.wordlist_dns)
@@ -72,22 +79,20 @@ def main():
         return
 
     # SSL/TLS checking for HTTPS services
-    ssl_info = {}
     if 443 in open_ports:
         print(Fore.YELLOW + "[*] Checking SSL/TLS configuration on port 443")
-        ssl_info = check_ssl(args.target, 443)
+        ssl_results = check_ssl(args.target, 443)
     else:
         print(Fore.YELLOW + "[*] Port 443 not open; skipping SSL/TLS check.")
 
     # banner grabbing
     print(Fore.YELLOW + "[*] Starting banner grabbing on {}".format(args.target))
-    service_data = {}
     if not open_ports:
         print(Fore.RED + "[!] No open ports found on {}".format(args.target))
     else:
         for port in open_ports:
             banner = grab_service_banner(args.target, port)
-            service_data[port] = banner
+            service_results[port] = banner
             if "Error" in banner or "Timeout" in banner:
                 print(Fore.LIGHTBLACK_EX + f"    > Port {port}: {banner}")
             else:
@@ -98,15 +103,18 @@ def main():
     if args.fuzz:
         print(Fore.YELLOW + "[*] Starting directory fuzzing on {}".format(args.target))
         if 80 in open_ports or 443 in open_ports:
-            found_paths = fuzz_directories(args.target, args.wordlist_fuzz)
+            fuzz_results = fuzz_directories(args.target, args.wordlist_fuzz)
         else:
             print(Fore.RED + "[!] No open ports for directory fuzzing.")
 
-        if found_paths:
+        if fuzz_results:
             print(Fore.YELLOW + "[*] Fuzzing completed. Found paths:")
-            for path, status in found_paths:
+            for path, status in fuzz_results:
                 print(Fore.GREEN + f"    > {path} (Status: {status})")
     
+    # Save report
+    print(Fore.YELLOW + "[*] Saving report...")
+    save_active_report(args.target, open_ports, service_results, fuzz_results if args.fuzz else [], dns_results, ssl_results, waf_results)
 
 
 def parse_ports(port_range):
